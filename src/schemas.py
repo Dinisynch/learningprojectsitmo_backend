@@ -94,6 +94,19 @@ class ProjectResponse(BaseModel):
     class Config:
         from_attributes = True
 
+class ProjectListItem(BaseModel):
+    id: int
+    name: str
+    description: str | None = None
+    max_participants: str | None = None
+    author_id: int
+
+    class Config:
+        from_attributes = True
+
+class ProjectListResponse(PaginatedResponse[ProjectListItem]):
+    pass
+
 
 class DeleteResponse(BaseModel):
     message: str

@@ -233,19 +233,35 @@ def create_project(
     return db_project
 
 
-@router.get("/projects", response_model=list[ProjectFull], tags=['project'])
+@router.get("/projects", response_model=ProjectListResponse, tags=['project'])
 def fetch_projects(
-    page: int = Query(1, ge=1), 
-    size: int = Query(10, ge=1, le=100),
+    page: int = Query(1, ge=1, description="Номер страницы"), 
+    limit: int = Query(10, ge=1, le=100, description="Количество проектов на странице"),
     db: Session = Depends(get_db),
     _: User = Depends(get_current_user)
 ):
-    offset = (page - 1) * size
-
-    db_projects = db.query(Project).offset(offset).limit(size).all()
-    projects_full = [ProjectFull.from_orm(project) for project in db_projects]
-
-    return projects_full
+    # Подсчет общего количества проектов
+    total = db.query(Project).count()
+    
+    # Вычисление offset для пагинации
+    offset = (page - 1) * limit
+    
+    # Получение проектов с пагинацией
+    db_projects = db.query(Project).offset(offset).limit(limit).all()
+    
+    # Преобразование в схему ProjectListItem
+    projects = [ProjectListItem.model_validate(project) for project in db_projects]
+    
+    # Вычисление общего количества страниц
+    total_pages = math.ceil(total / limit) if total > 0 else 0
+    
+    return ProjectListResponse(
+        items=projects,
+        total=total,
+        page=page,
+        limit=limit,
+        total_pages=total_pages
+    )
 
 
 """
